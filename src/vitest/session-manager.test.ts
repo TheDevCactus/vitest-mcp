@@ -12,7 +12,10 @@ const result: CheckResult = {
   lastRunAt: new Date().toISOString(),
 };
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe("VitestSessionManager", () => {
   it("reuses equal sessions and separates different selections", async () => {
@@ -50,6 +53,19 @@ describe("VitestSessionManager", () => {
     await manager.check({ projectRoot: "/repo" }, false, 1_000);
 
     await (manager as unknown as { evictIdle(): Promise<void> }).evictIdle();
+    expect(fake.close).toHaveBeenCalledOnce();
+    await manager.close();
+  });
+
+  it("periodically sweeps idle sessions", async () => {
+    vi.useFakeTimers();
+    const fake = { check: vi.fn().mockResolvedValue(result), close: vi.fn(), lastUsedAt: 0 };
+    vi.spyOn(VitestSession, "create").mockResolvedValue(fake as unknown as VitestSession);
+    const manager = new VitestSessionManager(10);
+    await manager.check({ projectRoot: "/repo" }, false, 1_000);
+
+    await vi.advanceTimersByTimeAsync(10);
+
     expect(fake.close).toHaveBeenCalledOnce();
     await manager.close();
   });

@@ -1,0 +1,10 @@
+mcp_servers:
+  vitest:
+    command: node
+    args:
+      - dist/server.js
+    cwd: .
+    env:
+      VITEST_MCP_ALLOWED_ROOTS: .
+    enabled_tools:
+      - check_tests

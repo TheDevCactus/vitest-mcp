@@ -48,6 +48,10 @@ describe("VitestSession coverage", () => {
     const watched = await session.check(false, 30_000);
     expect(watched.cached).toBe(true);
     expect(watched.invalidatedBy).toContain(path.join(projectRoot, "src", "used.ts"));
+
+    await session.close();
+    await session.close();
+    cleanup.pop();
   });
 
   it("normalizes failed and skipped tests", async () => {

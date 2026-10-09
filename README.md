@@ -52,6 +52,21 @@ Example configuration for a single project:
 }
 ```
 
+### Poolside
+
+This repository includes a shared Poolside binding in
+`.poolside/settings.yaml`. Build the server before starting Poolside from the
+repository root:
+
+```sh
+npm run build
+pool
+```
+
+Poolside will start `dist/server.js` over stdio and expose only the
+`check_tests` tool. Put personal overrides in
+`.poolside/settings.local.yaml`; that file is intentionally ignored.
+
 By default, `check_tests` can only inspect the server's working directory and
 its descendants. To allow multiple roots, set `VITEST_MCP_ALLOWED_ROOTS` to a
 platform-delimited list (`:` on Linux/macOS and `;` on Windows):

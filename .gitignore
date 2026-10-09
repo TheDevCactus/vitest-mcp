@@ -1,5 +1,42 @@
+# Dependencies
 node_modules/
+
+# Build and test output
 dist/
 coverage/
 .vitest/
+*.tsbuildinfo
+
+# Local caches and temporary files
+.cache/
+.eslintcache
+.vite/
+.vite-temp/
+.tmp/
+tmp/
+.vitest-mcp-test-*/
+
+# Environment files (keep documented examples)
+.env
+.env.*
+!.env.example
+.poolside/settings.local.yaml
+
+# Package-manager output
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tgz
+
+# Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db
