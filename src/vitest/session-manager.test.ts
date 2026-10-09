@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CheckResult } from "../domain/result.js";
+import type { Telemetry } from "../telemetry/logger.js";
 import { VitestSession } from "./session.js";
 import { VitestSessionManager } from "./session-manager.js";
 
@@ -18,6 +19,54 @@ afterEach(() => {
 });
 
 describe("VitestSessionManager", () => {
+  it("logs run lifecycle events and heartbeats", async () => {
+    vi.useFakeTimers();
+    let finish!: (value: CheckResult) => void;
+    const running = new Promise<CheckResult>((resolve) => { finish = resolve; });
+    const fake = { check: vi.fn().mockReturnValue(running), close: vi.fn(), lastUsedAt: Date.now() };
+    vi.spyOn(VitestSession, "create").mockResolvedValue(fake as unknown as VitestSession);
+    const telemetry = { log: vi.fn(), flush: vi.fn() } as unknown as Telemetry;
+    const manager = new VitestSessionManager(60_000, telemetry);
+
+    const check = manager.check({ projectRoot: "/repo", testPattern: "unit" }, true, 10_000);
+    await vi.advanceTimersByTimeAsync(5_000);
+    finish(result);
+    await check;
+
+    expect(telemetry.log).toHaveBeenCalledWith("run_started", expect.objectContaining({
+      runId: 1,
+      testPattern: "unit",
+      session: "created",
+    }));
+    expect(telemetry.log).toHaveBeenCalledWith("run_still_running", expect.objectContaining({
+      runId: 1,
+      elapsedMs: 5_000,
+    }));
+    expect(telemetry.log).toHaveBeenCalledWith("run_finished", expect.objectContaining({
+      runId: 1,
+      status: "passed",
+    }));
+    await manager.close();
+  });
+
+  it("logs run errors and rethrows them", async () => {
+    const fake = {
+      check: vi.fn().mockRejectedValue(new Error("run exploded")),
+      close: vi.fn(),
+      lastUsedAt: Date.now(),
+    };
+    vi.spyOn(VitestSession, "create").mockResolvedValue(fake as unknown as VitestSession);
+    const telemetry = { log: vi.fn(), flush: vi.fn() } as unknown as Telemetry;
+    const manager = new VitestSessionManager(60_000, telemetry);
+
+    await expect(manager.check({ projectRoot: "/repo" }, false, 1_000)).rejects.toThrow("run exploded");
+    expect(telemetry.log).toHaveBeenCalledWith("run_error", expect.objectContaining({
+      runId: 1,
+      message: "run exploded",
+    }));
+    await manager.close();
+  });
+
   it("reuses equal sessions and separates different selections", async () => {
     const fake = { check: vi.fn().mockResolvedValue(result), close: vi.fn(), lastUsedAt: Date.now() };
     const create = vi.spyOn(VitestSession, "create").mockResolvedValue(fake as unknown as VitestSession);

@@ -15,6 +15,7 @@ coverage/
 .tmp/
 tmp/
 .vitest-mcp-test-*/
+.vitest-mcp/
 
 # Environment files (keep documented examples)
 .env

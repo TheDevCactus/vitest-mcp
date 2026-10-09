@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { CheckResult, TestFailure, TestSummary } from "../domain/result.js";
 import { emptyTests } from "../domain/result.js";
+import { createProjectVitest, initializeVitest, type VitestFactory } from "./compat.js";
 import { parseCoverageReport } from "./parse-coverage.js";
 
 interface ReportedError {
@@ -34,7 +35,8 @@ interface TestRunResult {
 }
 
 interface VitestInstance {
-  standalone(): Promise<void>;
+  standalone?: () => Promise<void>;
+  init?: () => Promise<void>;
   globTestSpecifications(filters?: string[]): Promise<TestSpecification[]>;
   runTestSpecifications(specifications: TestSpecification[], allTestsRun?: boolean): Promise<TestRunResult>;
   rerunTestSpecifications(specifications: TestSpecification[], allTestsRun?: boolean): Promise<TestRunResult>;
@@ -49,7 +51,7 @@ interface VitestInstance {
 }
 
 interface VitestNodeModule {
-  createVitest(options: Record<string, unknown>, viteOverrides?: Record<string, unknown>, vitestOptions?: Record<string, unknown>): Promise<VitestInstance>;
+  createVitest: VitestFactory<VitestInstance>;
 }
 
 export interface SessionOptions {
@@ -177,7 +179,8 @@ export class VitestSession {
 
     try {
       const { createVitest } = await loadProjectVitest(options.projectRoot);
-      const vitest = await createVitest(
+      const vitest = await createProjectVitest(
+        createVitest,
         {
           root: options.projectRoot,
           watch: true,
@@ -194,10 +197,9 @@ export class VitestSession {
               }
             : { enabled: false },
         },
-        {},
         { stdout: output, stderr: errors },
       );
-      await vitest.standalone();
+      await initializeVitest(vitest);
       const specifications = await vitest.globTestSpecifications(
         options.testPattern ? [options.testPattern] : undefined,
       );

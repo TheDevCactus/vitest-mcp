@@ -12,7 +12,7 @@ Vitest executable and returns a small, normalized result.
 ## Requirements
 
 - Node.js 20 or newer
-- A project-local Vitest 4.1 or newer installation
+- A project-local Vitest 4.0.18 or newer installation
 - The project's configured Vitest coverage provider when requesting coverage,
   such as `@vitest/coverage-v8`
 
@@ -36,6 +36,21 @@ node /path/to/vitest-mcp/dist/server.js
 Because stdout is reserved for MCP messages, server diagnostics are written to
 stderr.
 
+### Telemetry log
+
+The server writes a human-readable activity log to `.vitest-mcp/server.log` in
+its working directory. Each agent-triggered check records its selected test and
+coverage patterns, whether its session was created or reused, five-second
+running heartbeats, completion status, test counts, cache state, invalidating
+files, errors, and shutdown events.
+
+The log rotates to `server.log.1` at 5 MiB. Override its location with an
+absolute or working-directory-relative path:
+
+```sh
+VITEST_MCP_LOG_FILE=/tmp/vitest-mcp.log node dist/server.js
+```
+
 ## MCP configuration
 
 Example configuration for a single project:
@@ -54,18 +69,19 @@ Example configuration for a single project:
 
 ### Poolside
 
-This repository includes a shared Poolside binding in
-`.poolside/settings.yaml`. Build the server before starting Poolside from the
-repository root:
+This repository includes a Poolside MCP example. Copy it to Poolside's
+project-local settings file, then build the server before starting Poolside
+from the repository root:
 
 ```sh
+cp .poolside/settings.local.example.yaml .poolside/settings.local.yaml
 npm run build
 pool
 ```
 
 Poolside will start `dist/server.js` over stdio and expose only the
-`check_tests` tool. Put personal overrides in
-`.poolside/settings.local.yaml`; that file is intentionally ignored.
+`check_tests` tool. `.poolside/settings.local.yaml` is intentionally ignored
+because Poolside documents it as personal, project-specific configuration.
 
 By default, `check_tests` can only inspect the server's working directory and
 its descendants. To allow multiple roots, set `VITEST_MCP_ALLOWED_ROOTS` to a
