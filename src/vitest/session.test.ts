@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { VitestSession } from "./session.js";
@@ -66,7 +67,7 @@ describe("VitestSession coverage", () => {
     const result = await session.check(true, 30_000);
 
     expect(result.status).toBe("failed");
-    expect(result.tests).toMatchObject({ total: 4, passed: 1, failed: 1, skipped: 1 });
+    expect(result.tests).toMatchObject({ total: 4, passed: 1, failed: 1, skipped: 2 });
     expect(result.tests.failures[0]).toMatchObject({ test: "fails" });
   });
 
